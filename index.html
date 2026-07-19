@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f2e9">
+  <meta name="description" content="用地图、路线与数据回看四天上海实训行程。">
+  <title>沪上四日 · 上海实训地图志</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://api.map.baidu.com/api?v=1.0&type=webgl&ak=pJI99eAO5nNcChXybykDak6i5zQGgZQh"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+  <noscript>
+    <div class="noscript">此地图需要启用 JavaScript 才能浏览。</div>
+  </noscript>
+
+  <div class="app-shell" id="app">
+    <main class="map-stage" aria-label="上海实训地图">
+      <div id="map" class="map-canvas" aria-label="百度地图交互区域"></div>
+
+      <header class="brand-block">
+        <p class="brand-kicker">SHANGHAI FIELD NOTES · 2026</p>
+        <h1>沪上四日</h1>
+        <p>从石库门到深水港，沿着一段实训路线观察城市的历史、技术与未来。</p>
+      </header>
+
+      <div id="map-status" class="map-status" role="status">
+        <span class="status-spinner" aria-hidden="true"></span>
+        <span>正在载入地图场景</span>
+      </div>
+
+      <section class="day-filter" aria-label="按日期筛选行程">
+        <span class="control-label">查看行程</span>
+        <div class="segment-control" id="day-selector" role="group" aria-label="行程日期">
+          <button class="segment is-active" type="button" data-day="all" aria-pressed="true">全部</button>
+          <button class="segment" type="button" data-day="1" aria-pressed="false">D1</button>
+          <button class="segment" type="button" data-day="2" aria-pressed="false">D2</button>
+          <button class="segment" type="button" data-day="3" aria-pressed="false">D3</button>
+          <button class="segment" type="button" data-day="4" aria-pressed="false">D4</button>
+        </div>
+      </section>
+
+      <section class="route-console" aria-label="行程回放控制">
+        <div class="route-console__heading">
+          <span class="route-day" id="route-day-label">四日完整行程</span>
+          <span class="route-state" id="route-state">准备回放</span>
+        </div>
+        <div class="route-progress" aria-hidden="true">
+          <span id="route-progress-bar"></span>
+        </div>
+        <div class="route-console__actions">
+          <button class="icon-button icon-button--primary" id="play-route" type="button" aria-label="播放行程" title="播放行程">
+            <i data-lucide="play" aria-hidden="true"></i>
+          </button>
+          <button class="icon-button" id="reset-route" type="button" aria-label="重新播放" title="重新播放">
+            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+          </button>
+          <p id="route-caption">5 段路线 · 9 个地点</p>
+        </div>
+      </section>
+
+      <button class="panel-toggle icon-button" id="panel-toggle" type="button" aria-label="收起故事面板" title="收起故事面板" aria-expanded="true" aria-controls="story-panel">
+        <i data-lucide="panel-right-close" aria-hidden="true"></i>
+      </button>
+    </main>
+
+    <aside class="story-panel" id="story-panel" aria-label="实训故事面板">
+      <div class="panel-grabber" aria-hidden="true"></div>
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">MAP JOURNAL / 01</p>
+          <h2 id="panel-title">行程全景</h2>
+        </div>
+        <button class="icon-button audio-master" id="audio-toggle" type="button" aria-label="播放地点音频" title="播放地点音频">
+          <i data-lucide="volume-2" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <nav class="panel-tabs" aria-label="故事面板视图">
+        <button type="button" class="panel-tab is-active" data-view="overview" aria-selected="true">概览</button>
+        <button type="button" class="panel-tab" data-view="place" aria-selected="false">地点</button>
+        <button type="button" class="panel-tab" data-view="insights" aria-selected="false">洞察</button>
+      </nav>
+
+      <div class="panel-scroll">
+        <section class="panel-view is-active" id="view-overview" data-view-panel="overview">
+          <div class="overview-lead">
+            <p class="chapter-number">04</p>
+            <div>
+              <h3>四天，三种城市切面</h3>
+              <p>历史现场、先进制造与科研机构共同组成这次实训的观察坐标。</p>
+            </div>
+          </div>
+          <dl class="metric-strip" id="metric-strip">
+            <div><dt>地点</dt><dd>9</dd></div>
+            <div><dt>记录路线</dt><dd>7</dd></div>
+            <div><dt>估算里程</dt><dd>198 km</dd></div>
+          </dl>
+          <div class="section-heading">
+            <p class="eyebrow">ITINERARY</p>
+            <h3>事件时间线</h3>
+          </div>
+          <ol class="event-timeline" id="event-timeline"></ol>
+        </section>
+
+        <section class="panel-view" id="view-place" data-view-panel="place" hidden>
+          <figure class="place-visual">
+            <img id="place-image" src="assets/images/first-congress.png" alt="中共一大会址示意视觉">
+            <figcaption id="place-image-credit">示意视觉 · 待替换实训照片</figcaption>
+          </figure>
+          <div class="place-heading">
+            <div class="place-meta" id="place-meta">DAY 1 · 红色教育</div>
+            <h3 id="place-name">中共一大会址</h3>
+            <p id="place-summary"></p>
+          </div>
+          <div class="highlight-band">
+            <span>观察重点</span>
+            <strong id="place-highlight"></strong>
+          </div>
+          <div class="place-details" id="place-details"></div>
+          <div class="place-actions">
+            <a class="command-button" id="place-link" href="#" target="_blank" rel="noreferrer">
+              <i data-lucide="external-link" aria-hidden="true"></i>
+              访问官方网站
+            </a>
+            <button class="command-button command-button--quiet" id="place-audio" type="button">
+              <i data-lucide="headphones" aria-hidden="true"></i>
+              <span>播放地点音频</span>
+            </button>
+          </div>
+          <p class="source-note" id="place-source"></p>
+        </section>
+
+        <section class="panel-view" id="view-insights" data-view-panel="insights" hidden>
+          <div class="chart-section">
+            <div class="section-heading">
+              <p class="eyebrow">DISTANCE</p>
+              <h3>每日记录里程</h3>
+            </div>
+            <div class="chart" id="distance-chart" role="img" aria-label="每日行程里程柱状图"></div>
+          </div>
+          <div class="chart-section">
+            <div class="section-heading">
+              <p class="eyebrow">FIELD MIX</p>
+              <h3>地点类型分布</h3>
+            </div>
+            <div class="chart" id="type-chart" role="img" aria-label="实训地点类型分布环形图"></div>
+          </div>
+          <div class="chart-section">
+            <div class="section-heading">
+              <p class="eyebrow">DAILY RHYTHM</p>
+              <h3>参访起止时间</h3>
+            </div>
+            <div class="chart chart--timeline" id="time-chart" role="img" aria-label="每日参访起止时间图"></div>
+          </div>
+          <p class="data-note">里程与时间为首版估算数据，正式提交前请按实训记录校正。</p>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <audio id="ambient-audio" preload="none" loop></audio>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
