@@ -1,3 +1,10 @@
+export const dayColors = Object.freeze({
+  1: "#2c73d2",
+  2: "#95a7dd",
+  3: "#e5f0ff",
+  4: "#d5a419"
+});
+
 export const poiData = [
   {
     id: "first-congress",
@@ -88,10 +95,10 @@ export const poiData = [
     name: "洋山港自动化码头",
     coord: { lng: 122.07364, lat: 30.62488 }, // TODO: 按参访区域校正坐标
     day: 2,
-    order: 1,
+    order: 2,
     type: "智慧港口",
     featured: true,
-    time: "09:00",
+    time: "14:00",
     duration: "150 分钟",
     summary: "在大型自动化码头观察桥吊、轨道吊与无人运输设备协同完成集装箱作业。",
     highlight: "自动化装卸与智能调度系统",
@@ -109,10 +116,10 @@ export const poiData = [
     name: "中国航海博物馆",
     coord: { lng: 121.92908, lat: 30.90716 }, // TODO: 按现场记录校正坐标
     day: 2,
-    order: 2,
+    order: 1,
     type: "行业文化",
     featured: false,
-    time: "14:00",
+    time: "09:00",
     duration: "120 分钟",
     summary: "通过航海史、船舶与港口专题展陈，补全自动化港口背后的行业知识。",
     highlight: "航海技术演进与港航文化",
@@ -129,7 +136,7 @@ export const poiData = [
     id: "huace",
     name: "华测导航",
     coord: { lng: 121.16821, lat: 31.15142 }, // TODO: 按实际参访园区校正坐标
-    day: 3,
+    day: 4,
     order: 1,
     type: "高新企业",
     featured: true,
@@ -171,7 +178,7 @@ export const poiData = [
     id: "siom",
     name: "中国科学院上海光机所",
     coord: { lng: 121.24313, lat: 31.38316 }, // TODO: 按实际参访入口校正坐标
-    day: 4,
+    day: 3,
     order: 1,
     type: "科研院所",
     featured: true,
@@ -187,6 +194,27 @@ export const poiData = [
     },
     link: "http://www.siom.cas.cn/",
     musicId: "science"
+  },
+  {
+    id: "lujiazui-green",
+    name: "陆家嘴中心绿地",
+    coord: { lng: 121.50559, lat: 31.23537 }, // TODO: 按实际参访入口校正坐标
+    day: 3,
+    order: 3,
+    type: "城市观察",
+    featured: false,
+    time: "17:00",
+    duration: "60 分钟",
+    summary: "在金融街区的开放绿地中观察高密度城市里的公共空间、步行系统与天际线关系。",
+    highlight: "金融核心区的公共绿地与城市界面",
+    details: ["开放空间", "步行系统", "城市天际线"],
+    image: {
+      src: "assets/images/urban-planning.png",
+      alt: "陆家嘴中心绿地示意视觉",
+      credit: "本地示意视觉 · TODO：替换实训照片"
+    },
+    link: "https://map.baidu.com/poi/%E9%99%86%E5%AE%B6%E5%98%B4%E4%B8%AD%E5%BF%83%E7%BB%BF%E5%9C%B0",
+    musicId: "city"
   }
 ];
 
@@ -194,7 +222,7 @@ export const routeData = [
   {
     day: 1,
     label: "城市历史步行线",
-    color: "#b7352c",
+    color: dayColors[1],
     distance: 7.4, // TODO: 使用实际轨迹计算
     start: "09:00",
     end: "18:00",
@@ -208,35 +236,36 @@ export const routeData = [
   {
     day: 2,
     label: "临港港航线",
-    color: "#176b66",
+    color: dayColors[2],
     distance: 83.5, // TODO: 使用实际车辆轨迹计算
     start: "09:00",
-    end: "16:30",
-    path: ["yangshan-port", "maritime-museum"],
+    end: "17:00",
+    path: ["maritime-museum", "yangshan-port"],
     segments: [
-      { from: "yangshan-port", to: "maritime-museum", mode: "实训大巴", distance: 83.5, duration: "约 95 分钟" }
+      { from: "maritime-museum", to: "yangshan-port", mode: "实训大巴", distance: 83.5, duration: "约 95 分钟" }
     ]
   },
   {
     day: 3,
     label: "技术与城市线",
-    color: "#245ca6",
+    color: dayColors[3],
     distance: 39.2, // TODO: 使用实际车辆轨迹计算
     start: "09:30",
-    end: "16:30",
-    path: ["huace", "urban-planning"],
+    end: "18:00",
+    path: ["siom", "urban-planning", "lujiazui-green"],
     segments: [
-      { from: "huace", to: "urban-planning", mode: "实训大巴", distance: 39.2, duration: "约 70 分钟" }
+      { from: "siom", to: "urban-planning", mode: "实训大巴", distance: 34.4, duration: "约 65 分钟" },
+      { from: "urban-planning", to: "lujiazui-green", mode: "步行", distance: 4.8, duration: "约 20 分钟" }
     ]
   },
   {
     day: 4,
-    label: "科研精神线",
-    color: "#8a6325",
+    label: "高新企业线",
+    color: dayColors[4],
     distance: 0, // 单点参访，未记录出发地；TODO: 补充往返路线
     start: "09:30",
     end: "12:30",
-    path: ["siom"],
+    path: ["huace"],
     segments: []
   }
 ];
@@ -252,7 +281,9 @@ export const audioTracks = [
 export const poiById = new Map(poiData.map((poi) => [poi.id, poi]));
 
 export function getPoisForDay(day) {
-  return day === "all" ? poiData : poiData.filter((poi) => poi.day === Number(day));
+  return poiData
+    .filter((poi) => day === "all" || poi.day === Number(day))
+    .sort((a, b) => a.day - b.day || a.order - b.order);
 }
 
 export function getRoutesForDay(day) {

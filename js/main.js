@@ -1,12 +1,13 @@
-import { audioTracks, getPoisForDay, poiById, poiData, routeData } from "../data/poi-data.js";
-import { MarkerController } from "./map-markers.js";
-import { RouteController } from "./route-anim.js";
-import { ChartsController } from "./charts.js";
+import { audioTracks, getPoisForDay, poiById, poiData, routeData } from "../data/poi-data.js?v=20260720-13";
+import { MarkerController } from "./map-markers.js?v=20260720-13";
+import { RouteController } from "./route-anim.js?v=20260720-13";
+import { ChartsController } from "./charts.js?v=20260720-13";
 
 const dom = {
   app: document.getElementById("app"),
   mapStatus: document.getElementById("map-status"),
   daySelector: document.getElementById("day-selector"),
+  mapModeSelector: document.getElementById("map-mode-selector"),
   panelToggle: document.getElementById("panel-toggle"),
   panelTitle: document.getElementById("panel-title"),
   panelScroll: document.querySelector(".panel-scroll"),
@@ -38,6 +39,8 @@ const state = {
   view: "overview",
   selectedPoi: poiData[0],
   panelCollapsed: false,
+  mapMode: "basic",
+  basicMapView: null,
   audioStarted: false,
   currentTrack: null
 };
@@ -86,7 +89,10 @@ function renderTimeline() {
   dom.timeline.innerHTML = pois.map((poi) => `
     <li>
       <button type="button" class="timeline-item" data-poi-id="${poi.id}" aria-label="在地图中查看${poi.name}">
-        <span class="timeline-time">D${poi.day}<br>${poi.time}</span>
+        <span class="timeline-time">
+          <strong>第 ${poi.order} 站</strong>
+          <span>D${poi.day} · ${poi.time}</span>
+        </span>
         <span class="timeline-copy">
           <h4>${poi.name}</h4>
           <p>${poi.type} · ${poi.duration}</p>
@@ -156,6 +162,58 @@ function selectDay(day) {
   const activeRoutes = day === "all" ? routeData : routeData.filter((route) => route.day === Number(day));
   const segmentCount = activeRoutes.reduce((sum, route) => sum + route.segments.length, 0);
   dom.routeCaption.textContent = `${segmentCount || "单点"} ${segmentCount ? "段路线" : "参访"} · ${activePois.length} 个地点`;
+  if (state.mapMode === "3d") apply3dView(state.selectedPoi);
+}
+
+function updateMapModeButtons() {
+  dom.mapModeSelector.querySelectorAll("[data-map-mode]").forEach((button) => {
+    const active = button.dataset.mapMode === state.mapMode;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function apply3dView(target = state.selectedPoi) {
+  if (!map || typeof map.setTilt !== "function" || typeof map.setHeading !== "function") return;
+  const focus = target?.coord
+    ? new BMapGL.Point(target.coord.lng, target.coord.lat)
+    : Number.isFinite(target?.lng) && Number.isFinite(target?.lat)
+      ? new BMapGL.Point(target.lng, target.lat)
+    : new BMapGL.Point(121.4737, 31.2304);
+  map.centerAndZoom(focus, 18);
+  map.setHeading(64.5);
+  map.setTilt(73);
+}
+
+function setMapMode(mode) {
+  if (!map || mode === state.mapMode || !["basic", "3d"].includes(mode)) return;
+
+  if (mode === "3d") {
+    state.basicMapView = {
+      center: typeof map.getCenter === "function" ? map.getCenter() : null,
+      zoom: typeof map.getZoom === "function" ? map.getZoom() : 10,
+      day: state.day
+    };
+    state.mapMode = "3d";
+    apply3dView(routes?.getFollowPoint?.() || state.selectedPoi);
+    showToast("已切换至 3D 建筑视角");
+  } else {
+    state.mapMode = "basic";
+    if (typeof map.setTilt === "function") map.setTilt(0);
+    if (typeof map.setHeading === "function") map.setHeading(0);
+    const routePoint = routes?.getFollowPoint?.();
+    if (routePoint) {
+      map.centerAndZoom(routePoint, 15);
+    } else if (state.basicMapView?.day === state.day && state.basicMapView.center) {
+      map.centerAndZoom(state.basicMapView.center, state.basicMapView.zoom);
+    } else {
+      markers?.filter(state.day);
+    }
+    state.basicMapView = null;
+    showToast("已切换至基础地图");
+  }
+
+  updateMapModeButtons();
 }
 
 function togglePanel(forceCollapsed) {
@@ -216,7 +274,7 @@ function updateAudioButtons(playing) {
   createIcons();
 }
 
-function updateRouteUi({ status, progress }) {
+function updateRouteUi({ status, progress, step }) {
   const labels = {
     ready: "准备回放",
     playing: "正在回放",
@@ -229,6 +287,11 @@ function updateRouteUi({ status, progress }) {
   dom.playRoute.setAttribute("aria-label", playing ? "暂停行程" : status === "paused" ? "继续行程" : "播放行程");
   dom.playRoute.title = dom.playRoute.getAttribute("aria-label");
   dom.playRoute.innerHTML = `<i data-lucide="${playing ? "pause" : "play"}"></i>`;
+  if ((status === "playing" || status === "paused") && step) {
+    dom.routeCaption.textContent = step.type === "focus"
+      ? `第 ${step.poi.order} 站 · ${step.poi.name}`
+      : `第 ${step.from.order} 站 ${step.from.name} → 第 ${step.to.order} 站 ${step.to.name}`;
+  }
   createIcons();
 }
 
@@ -236,6 +299,11 @@ function bindUi() {
   dom.daySelector.addEventListener("click", (event) => {
     const button = event.target.closest("[data-day]");
     if (button) selectDay(button.dataset.day);
+  });
+
+  dom.mapModeSelector.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-map-mode]");
+    if (button && !button.disabled) setMapMode(button.dataset.mapMode);
   });
 
   document.querySelector(".panel-tabs").addEventListener("click", (event) => {
@@ -253,6 +321,7 @@ function bindUi() {
   dom.resetRoute.addEventListener("click", () => {
     routes?.reset();
     markers?.filter(state.day);
+    if (state.mapMode === "3d") apply3dView(state.selectedPoi);
   });
   dom.audioToggle.addEventListener("click", toggleAudio);
   dom.placeAudio.addEventListener("click", toggleAudio);
@@ -284,7 +353,10 @@ async function initMap() {
     markers = new MarkerController({
       map,
       pois: poiData,
-      onSelect: (poi) => selectPlace(poi, true)
+      onSelect: (poi) => {
+        selectPlace(poi, true);
+        if (state.mapMode === "3d") apply3dView(poi);
+      }
     });
     markers.mount();
 
@@ -292,6 +364,8 @@ async function initMap() {
       map,
       routes: routeData,
       poiById,
+      getMapMode: () => state.mapMode,
+      prepare3dView: (point) => apply3dView(point),
       onStateChange: updateRouteUi,
       onSegmentSelect: ({ segment, from, to }) => {
         const detail = `${from.name} → ${to.name} · ${segment.mode} · ${segment.distance} km · ${segment.duration}`;
@@ -301,6 +375,9 @@ async function initMap() {
     });
     routes.mount();
     markers.filter("all");
+    dom.mapModeSelector.querySelectorAll("[data-map-mode]").forEach((button) => {
+      button.disabled = false;
+    });
 
     const hideStatus = () => dom.mapStatus.classList.add("is-hidden");
     map.addEventListener("tilesloaded", hideStatus);

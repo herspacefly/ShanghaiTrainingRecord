@@ -32,16 +32,32 @@
         <span>正在载入地图场景</span>
       </div>
 
-      <section class="day-filter" aria-label="按日期筛选行程">
-        <span class="control-label">查看行程</span>
-        <div class="segment-control" id="day-selector" role="group" aria-label="行程日期">
-          <button class="segment is-active" type="button" data-day="all" aria-pressed="true">全部</button>
-          <button class="segment" type="button" data-day="1" aria-pressed="false">D1</button>
-          <button class="segment" type="button" data-day="2" aria-pressed="false">D2</button>
-          <button class="segment" type="button" data-day="3" aria-pressed="false">D3</button>
-          <button class="segment" type="button" data-day="4" aria-pressed="false">D4</button>
-        </div>
-      </section>
+      <div class="map-toolbar">
+        <section class="day-filter" aria-label="按日期筛选行程">
+          <span class="control-label">查看行程</span>
+          <div class="segment-control" id="day-selector" role="group" aria-label="行程日期">
+            <button class="segment is-active" type="button" data-day="all" aria-pressed="true">全部</button>
+            <button class="segment" type="button" data-day="1" aria-pressed="false">D1</button>
+            <button class="segment" type="button" data-day="2" aria-pressed="false">D2</button>
+            <button class="segment" type="button" data-day="3" aria-pressed="false">D3</button>
+            <button class="segment" type="button" data-day="4" aria-pressed="false">D4</button>
+          </div>
+        </section>
+
+        <section class="map-mode-control" aria-label="地图样式选择">
+          <span class="control-label">地图视图</span>
+          <div class="segment-control segment-control--map" id="map-mode-selector" role="group" aria-label="地图样式">
+            <button class="segment map-mode-segment is-active" type="button" data-map-mode="basic" aria-pressed="true" title="基础地图">
+              <i data-lucide="map" aria-hidden="true"></i>
+              <span>基础</span>
+            </button>
+            <button class="segment map-mode-segment" type="button" data-map-mode="3d" aria-pressed="false" title="显示建筑高度的 3D 地图" disabled>
+              <i data-lucide="building-2" aria-hidden="true"></i>
+              <span>3D</span>
+            </button>
+          </div>
+        </section>
+      </div>
 
       <section class="route-console" aria-label="行程回放控制">
         <div class="route-console__heading">
@@ -165,6 +181,15 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <audio id="ambient-audio" preload="none" loop></audio>
 
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=20260720-13"></script>
+  <script>
+    if (window.location.protocol === "file:") {
+      const notice = document.getElementById("file-protocol-notice");
+      const status = document.getElementById("map-status");
+      notice.hidden = false;
+      status.classList.add("is-error");
+      status.innerHTML = "<span>当前是 file:// 打开方式，地图脚本未启动。</span>";
+    }
+  </script>
 </body>
 </html>
